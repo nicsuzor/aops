@@ -1,0 +1,17 @@
+{
+  "name": "aops-core",
+  "version": "0.3.16",
+  "description": "AcademicOps Framework Extension for Gemini CLI - skills, agents, hooks, and tools for research workflow automation",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "pkb": {
+      "command": "bash",
+      "args": [
+        "${extensionPath}/scripts/run-mcp.sh"
+      ],
+      "env": {
+        "PKB_MCP_URL": "${PKB_MCP_URL}"
+      }
+    }
+  }
+}
