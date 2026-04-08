@@ -3,10 +3,10 @@ name: rbg
 description: The Judge. Enforces universal axioms and workflow discipline. Detects
   compliance failures, ultra vires actions, premature termination, scope explosion,
   and plan-less execution. Output is parsed programmatically.
-model: gemini-3-flash-preview
 tools:
 - read_file
 kind: local
+model: inherit
 max_turns: 15
 timeout_mins: 5
 ---
