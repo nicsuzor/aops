@@ -62,9 +62,9 @@ def run_session_env_setup(ctx: HookContext, state: SessionState) -> GateResult |
 
     # Use precomputed short_hash from context
     short_hash = ctx.session_short_hash
-    hook_log_path = get_hook_log_path(ctx.session_id, ctx.raw_input)
-    state_file_path = get_session_file_path(ctx.session_id, input_data=ctx.raw_input)
-    status_dir = get_session_status_dir(ctx.session_id, ctx.raw_input)
+    hook_log_path = get_hook_log_path(ctx.session_id, transcript_path=ctx.transcript_path)
+    state_file_path = get_session_file_path(ctx.session_id, transcript_path=ctx.transcript_path)
+    status_dir = get_session_status_dir(ctx.session_id, transcript_path=ctx.transcript_path)
 
     # Fail-fast: ensure state file can be written
     if not state_file_path.exists():
@@ -82,7 +82,7 @@ def run_session_env_setup(ctx: HookContext, state: SessionState) -> GateResult |
                 metadata={"source": "session_start", "error": str(e)},
             )
 
-    transcript_path = ctx.raw_input.get("transcript_path", "") if ctx.raw_input else ""
+    transcript_path = ctx.transcript_path or ""
 
     # Session started messages
     messages = [
