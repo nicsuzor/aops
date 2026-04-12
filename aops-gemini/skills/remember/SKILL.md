@@ -13,6 +13,7 @@ mode: execution
 domain:
   - operations
 allowed-tools: Read,Write,Edit,mcp_pkb_create_memory,mcp_pkb_search
+owner: pauli
 version: 2.0.0
 ---
 

@@ -13,6 +13,7 @@ mode: execution
 domain:
   - operations
 allowed-tools: Bash,Read,Write,Grep,Glob,Skill,mcp_pkb_search,mcp_pkb_pkb_orphans,mcp_pkb_create_memory,mcp_pkb_list_tasks,mcp_pkb_graph_stats,mcp_pkb_get_network_metrics,mcp_pkb_update_task,mcp_pkb_get_task,mcp_pkb_task_search,mcp_pkb_pkb_context,mcp_pkb_bulk_reparent,mcp_pkb_find_duplicates,mcp_pkb_batch_merge,mcp_pkb_merge_node,mcp_pkb_complete_task,mcp_pkb_batch_reclassify,mcp_pkb_batch_archive,mcp_pkb_batch_update,mcp_pkb_create_task,mcp_pkb_update_memory,mcp_omcp_messages_search,mcp_omcp_messages_query,mcp_omcp_calendar_list_events
+owner: pauli
 version: 0.1.0
 tags:
   - consolidation
