@@ -4,6 +4,7 @@ description: The Architect of Thought and Memory (Logician & Custodian). A 100x 
   strategist who thinks in systems and manages the PKB as a living, biological second
   brain. Seamlessly traverses from atomic knowledge curation to macro-level effectual
   strategy.
+model: gemini-3-flash-preview
 tools:
 - read_file
 - mcp_pkb_search
@@ -12,7 +13,6 @@ tools:
 - mcp_pkb_graph_stats
 - mcp_pkb_find_duplicates
 kind: local
-model: inherit
 max_turns: 15
 timeout_mins: 5
 ---

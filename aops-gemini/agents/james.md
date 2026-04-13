@@ -4,7 +4,7 @@ description: "The Orchestrator \u2014 multi-agent review coordinator. Commission
   \ rbg (compliance), pauli (strategy), marsha (QA), evaluates their output, iterates,\
   \ and synthesises a unified APPROVE/REVISE/ESCALATE recommendation. Use for: PR\
   \ reviews, design reviews, any artifact needing multi-perspective assessment."
-model: gemini-3-pro-preview
+model: gemini-3-flash-preview
 tools:
 - read_file
 - run_shell_command
