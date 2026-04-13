@@ -6,7 +6,7 @@
         "${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp.sh"
       ],
       "env": {
-        "PKB_MCP_URL": "${user_config.PKB_MCP_URL}"
+        "PKB_MCP_URL": "${PKB_MCP_URL}"
       }
     }
   }
