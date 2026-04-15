@@ -35,7 +35,6 @@ from lib.insights_generator import (  # noqa: E402
     write_insights_file,
 )
 from lib.paths import get_sessions_repo, get_transcripts_dir  # noqa: E402
-from lib.session_naming import get_session_filename  # noqa: E402
 from lib.session_reader import find_sessions  # noqa: E402
 from lib.transcript_parser import (  # noqa: E402
     SessionProcessor,
@@ -77,11 +76,16 @@ def _load_transcript_config() -> dict:
         return {}
 
 
-def sync_client_log(session_path: Path, session_id: str, date: datetime | None = None) -> None:
-    """Sync raw client log to $AOPS_SESSIONS/client-logs/ with unified naming.
+MAX_CLIENT_LOG_BYTES = 30 * 1024 * 1024
 
+
+def sync_client_log(session_path: Path, session_id: str, date: datetime | None = None) -> None:
+    """Sync raw client log to $AOPS_SESSIONS/client-logs/ under a stable name.
+
+    One file per sessionId: ``{session_id}-client.{ext}``. Overwrites in place
+    so long-running sessions don't fan out into hundreds of timestamped copies.
     Prefer hardlink for efficiency, fallback to copy for cross-filesystem scenarios.
-    Naming follows: YYYYMMDD-HH-shorthash-client.jsonl
+    The ``date`` parameter is accepted for backwards compatibility and ignored.
     """
     if session_path.is_dir():
         # Antigravity brain sessions are directories, skip for now
@@ -90,25 +94,41 @@ def sync_client_log(session_path: Path, session_id: str, date: datetime | None =
     try:
         sessions_root = get_sessions_repo()
         client_logs_dir = sessions_root / "client-logs"
-        client_logs_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            client_logs_dir.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            # AOPS_SESSIONS may point to an unreachable host path (crew
+            # containers without a volume mount). Skip sync quietly.
+            print(f"⚠️  client-logs dir unreachable ({e}); skipping sync", file=sys.stderr)
+            return
 
-        # Fallback to mtime if date not provided (prevents non-deterministic naming)
-        if date is None:
-            date = datetime.fromtimestamp(session_path.stat().st_mtime).astimezone()
+        src_stat = session_path.stat()
+        # GitHub rejects blobs >100MB. Cap at 30MB so headroom survives growth
+        # between sync ticks and so even a dozen mega-sessions stay under the
+        # sessions-repo push budget.
+        if src_stat.st_size > MAX_CLIENT_LOG_BYTES:
+            print(
+                f"⚠️  client log {session_path.name} is {src_stat.st_size / 1_000_000:.0f}MB "
+                f"(> {MAX_CLIENT_LOG_BYTES // 1_000_000}MB cap); skipping sync",
+                file=sys.stderr,
+            )
+            return
 
-        # Unified naming: YYYYMMDD-HH-shorthash-client[.jsonl|.json]
-        # Preserves source extension: Claude uses .jsonl, Gemini uses .json
-        target_name = get_session_filename(
-            session_id,
-            date.isoformat(),
-            slug="client",
-            suffix=session_path.suffix,
-        )
+        # Stable per-session name based on the source filename stem, which is
+        # already unique per live session (UUID for Claude, date-time-hash for
+        # crew, session-* for Gemini). All other context lives in the payload.
+        target_name = f"{session_path.stem}-client{session_path.suffix}"
         target_path = client_logs_dir / target_name
 
-        # Skip if already current (check mtime)
         if target_path.exists():
-            if target_path.stat().st_mtime >= session_path.stat().st_mtime:
+            tgt_stat = target_path.stat()
+            # Same inode (hardlink already in place) → nothing to do
+            if tgt_stat.st_ino == src_stat.st_ino:
+                _sweep_legacy_client_logs(client_logs_dir, session_id, target_name)
+                return
+            # Already current → nothing to do
+            if tgt_stat.st_mtime >= src_stat.st_mtime and tgt_stat.st_size == src_stat.st_size:
+                _sweep_legacy_client_logs(client_logs_dir, session_id, target_name)
                 return
             target_path.unlink()
 
@@ -119,16 +139,40 @@ def sync_client_log(session_path: Path, session_id: str, date: datetime | None =
             # Fallback to copy (cross-filesystem, e.g. container to host)
             shutil.copy2(session_path, target_path)
 
-        # Ensure correct permissions for shared visibility
         try:
             target_path.chmod(0o644)
         except OSError:
             pass
 
+        _sweep_legacy_client_logs(client_logs_dir, session_id, target_name)
+
         print(f"🔄 Synced client log: {target_name}")
 
     except Exception as e:
         print(f"⚠️  Failed to sync client log: {e}", file=sys.stderr)
+
+
+def _sweep_legacy_client_logs(client_logs_dir: Path, session_id: str, keep: str) -> None:
+    """Delete old timestamped duplicates for this session_id.
+
+    Handles two legacy schemes emitted by older plugin-cache versions:
+      - ``YYYYMMDD-HH-{shorthash}-client.*`` (hour bucket, shorthash = session_id[:8])
+      - ``YYYYMMDD-HHMM-{session_id}-...-client.*`` (minute bucket with slug)
+    """
+    shorthash = session_id[:8]
+    patterns = (
+        f"*-{shorthash}-client.*",
+        f"*-{shorthash}-*-client.*",
+        f"*-{session_id}-*-client.*",
+    )
+    for pattern in patterns:
+        for stale in client_logs_dir.glob(pattern):
+            if stale.name == keep:
+                continue
+            try:
+                stale.unlink()
+            except OSError:
+                pass
 
 
 def _is_excluded_project(project: str, config: dict | None = None) -> bool:

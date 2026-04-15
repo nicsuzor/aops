@@ -42,16 +42,16 @@ Session mining and note creation. Silently extracts information and maintains kn
 
 ### Creating Notes
 
-Use `activate_skill(name="remember")` which handles both file creation and PKB sync:
+Use `activate_skill(name="remember")`. Writes go via PKB MCP only — never the filesystem `write_file`/`replace` tool, and never directly to `$ACA_DATA/**`. PKB IS `$ACA_DATA`; direct filesystem access bypasses indexing, dedup, and permission guarantees.
 
-1. Write markdown file with proper frontmatter
-2. Sync to PKB via `mcp_pkb_create_memory`
+1. Compose the content (body + title + tags).
+2. Call `mcp_pkb_create_memory` (atomic memories) or `mcp_pkb_create` (full documents).
 
 ### Where to File (MANDATORY SEQUENCE)
 
 1. **Search first**: `mcp_pkb_search(query="topic keywords")`
-2. **If match found**: AUGMENT existing file (integrate info, don't append dated entry)
-3. **If no match**: Create new TOPICAL file (not session/date file)
+2. **If match found**: AUGMENT the existing document via `mcp_pkb_append(id=...)` — integrate info, don't append dated entries.
+3. **If no match**: Create a new TOPICAL document (not session/date file) via `mcp_pkb_create`.
 
 ### Augment vs Concatenate
 
