@@ -12,14 +12,15 @@ For Claude Code's hook system in general, see the [official docs](https://code.c
 
 ## Active Hooks
 
-| File                        | Event            | Purpose                               |
-| --------------------------- | ---------------- | ------------------------------------- |
-| session_env_setup.sh        | SessionStart     | Environment setup                     |
-| sessionstart_load_axioms.py | SessionStart     | Injects AXIOMS, FRAMEWORK, HEURISTICS |
-| user_prompt_submit.py       | UserPromptSubmit | Context enrichment via temp file      |
-| policy_enforcer.py          | PreToolUse       | Block destructive operations          |
-| autocommit_state.py         | PostToolUse      | Auto-commit data/ changes             |
-| unified_logger.py           | ALL events       | Universal event logging               |
+| File                  | Event            | Purpose                          |
+| --------------------- | ---------------- | -------------------------------- |
+| session_env_setup.sh  | SessionStart     | Environment setup                |
+| user_prompt_submit.py | UserPromptSubmit | Context enrichment via temp file |
+| policy_enforcer.py    | PreToolUse       | Block destructive operations     |
+| autocommit_state.py   | PostToolUse      | Auto-commit data/ changes        |
+| unified_logger.py     | ALL events       | Universal event logging          |
+
+Axiom enforcement is delegated to the `rbg` agent — axiom content is no longer injected at session start.
 
 **Architecture principle**: Hooks inject context — they don't do LLM reasoning. Timeouts: 2-30 seconds. Hooks must NOT call the Claude/Anthropic API directly.
 
@@ -58,14 +59,14 @@ The PKB MCP server uses a wrapper script instead of calling `uvx` directly:
 ```json
 {
   "command": "bash",
-  "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run-mcp.sh"],
+  "args": ["${extensionPath}/scripts/run-mcp.sh"],
   "env": { "PKB_MCP_URL": "${user_config.PKB_MCP_URL}" }
 }
 ```
 
 `run-mcp.sh` sources `ensure-path.sh`, validates `$PKB_MCP_URL`, ensures `UV_CACHE_DIR` is writable, then exec's `uvx fastmcp run "$PKB_MCP_URL"`.
 
-**Template**: `aops-core/mcp.json.template` — has platform-specific sections for Claude (`${CLAUDE_PLUGIN_ROOT}`, `${user_config.*}`) and Gemini (`${extensionPath}`, `${PKB_MCP_URL}`).
+**Template**: `aops-core/mcp.json.template` — has platform-specific sections for Claude (`${extensionPath}`, `${user_config.*}`) and Gemini (`${extensionPath}`, `${PKB_MCP_URL}`).
 
 ## Hook I/O Schemas
 
@@ -168,7 +169,7 @@ Hook I/O logged to `~/.claude/projects/<project>/<date>-<shorthash>-hooks.jsonl`
 | Aspect          | Claude Code                | Gemini CLI                                    |
 | --------------- | -------------------------- | --------------------------------------------- |
 | Config file     | `~/.claude/settings.json`  | `~/.gemini/settings.json`                     |
-| Plugin path var | `${CLAUDE_PLUGIN_ROOT}`    | `${extensionPath}`                            |
+| Plugin path var | `${extensionPath}`    | `${extensionPath}`                            |
 | Extension hooks | `hooks` in plugin settings | `hooks/hooks.json` in extension dir           |
 | Safe settings   | N/A                        | `{"hooksConfig":{"enabled":true}}` (no auth!) |
 

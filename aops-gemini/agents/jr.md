@@ -54,7 +54,7 @@ Before taking any action, ground yourself:
    mcp_plugin_aops-core_pkb_pkb_context()
    ```
 
-4. **Framework Principles**: Read `AXIOMS.md` and `VISION.md` as needed for alignment checks.
+4. **Framework Vision**: Read `VISION.md` as needed for alignment checks. Axiom enforcement is delegated to `rbg` — invoke that agent for compliance review rather than reading axioms yourself.
 
 ## Your Role
 
