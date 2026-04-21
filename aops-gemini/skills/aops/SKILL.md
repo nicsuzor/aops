@@ -254,11 +254,11 @@ Every task MUST follow this lifecycle. No shortcuts.
 
    IF task exists:
      mcp_plugin_aops-core_pkb_get_task(id="<id>")
-     mcp_plugin_aops-core_pkb_update_task(id="<id>", status="active")
+     mcp_plugin_aops-core_pkb_update_task(id="<id>", status="in_progress")
 
    IF creating new tracked work:
      mcp_plugin_aops-core_pkb_create_task(title="[description]", type="task", project="aops", priority=2)
-     mcp_plugin_aops-core_pkb_update_task(id="<id>", status="active")
+     mcp_plugin_aops-core_pkb_update_task(id="<id>", status="in_progress")
 
    IF quick ad-hoc work (< 15 min, no dependencies):
      Use TodoWrite for session tracking only

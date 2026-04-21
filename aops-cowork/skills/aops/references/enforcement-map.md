@@ -42,7 +42,7 @@ The enforcer gate runs periodically (every ~7 tool calls) to check for:
 
 - Ultra vires behavior (acting beyond granted authority)
 - Scope creep (work expanding beyond original request)
-- Infrastructure failure workarounds (violates P#9, P#25)
+- Infrastructure failure workarounds (violates A8 — Halt on Failure)
 - SSOT violations
 
 ### Output Formats
@@ -76,6 +76,20 @@ export HANDOVER_GATE_MODE=block
 ```
 
 Or set at session start in `session_env_setup.sh`.
+
+## Supervisor Plan-Review Gate
+
+**Location**: `aops-core/skills/supervisor/instructions/decomposition-and-review.md` — Phase 2.5
+
+**What it enforces**: After decomposition + Phase 2 review synthesis, the supervisor MUST check whether the parent task's `status == "queued"` before dispatching any subtasks. If the parent is not yet `queued`, the supervisor posts a synthesis summary, sets parent `status = "ready"`, and STOPS — no subtasks are dispatched.
+
+**Condition**: `parent.status != "queued"` → HALT; `parent.status == "queued"` → proceed to DISPATCH.
+
+**Approval record**: The `ready → queued` status transition performed by the human IS the approval record. No separate marker or metadata.
+
+**Mode**: Always block — there is no warn-only bypass for this gate.
+
+---
 
 ## Adding New Enforcement
 

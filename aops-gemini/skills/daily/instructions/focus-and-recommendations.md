@@ -25,6 +25,8 @@ summary = mcp_pkb_task_summary()
 `ready` = leaf tasks with claimable types (task/bug/feature), active status, all dependencies met.
 This is the ONLY consumer-facing view. Use `summary["ready"]` as the denominator for priority bars.
 
+> **Note (taxonomy)**: Daily planning legitimately surfaces `ready` (decomposed-but-not-yet-queued) tasks because the whole point of the daily review is to help the user decide what to promote from `ready` → `queued` for agent dispatch. See [[TAXONOMY]] §Status Values. Agent dispatch (`/pull`) pulls from `queued`, NOT `ready`.
+
 **Format**: `P0 ░░░░░░░░░░ 9/333` where:
 
 - `9` = `summary["by_priority"]["p0"]`
@@ -71,14 +73,14 @@ Copy the `formatted` field from the response directly into the code block.
 Count tasks awaiting user decisions (for decision queue summary):
 
 ```python
-# Get waiting tasks assigned to user
-waiting_tasks = mcp_pkb_list_tasks(
-    status="waiting",
+# Get ready tasks assigned to user (awaiting human promotion to queued)
+ready_tasks = mcp_pkb_list_tasks(
+    status="ready",
     assignee="nic",
     limit=50
 )
 
-# Get review tasks assigned to user
+# Get review tasks assigned to user (awaiting human judgment)
 review_tasks = mcp_pkb_list_tasks(
     status="review",
     assignee="nic",
@@ -88,7 +90,7 @@ review_tasks = mcp_pkb_list_tasks(
 # Filter to decision-type tasks (exclude project/epic/goal)
 EXCLUDED_TYPES = ["project", "epic", "goal"]
 decisions = [
-    t for t in (waiting_tasks + review_tasks)
+    t for t in (ready_tasks + review_tasks)
     if t.type not in EXCLUDED_TYPES
 ]
 

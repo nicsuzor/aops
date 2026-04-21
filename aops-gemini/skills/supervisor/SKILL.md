@@ -48,6 +48,13 @@ Write state to the task body and commit BEFORE dispatching. If killed between
 checkpoint and action, the next instance sees pre-action state and retries
 safely. Record-then-fire, not fire-then-record.
 
+Supervisor state appends to the epic body (a `## Supervisor Log` section with
+timestamped entries) are part of the supervisor contract — **not** scope creep.
+Downstream enforcers should not flag these as P#5 violations; if one does,
+correct the enforcer, not the supervisor. Keep entries terse and factual:
+dispatch timestamps, task IDs, exit conditions, recovery actions. One line per
+event is usually enough.
+
 ### Idempotent Operations
 
 Every supervisor action is safe to repeat. Dispatching a task that's already
@@ -67,18 +74,29 @@ The supervisor is NOT a pipeline — it's a loop that enters at whatever phase
 the epic needs on each invocation.
 
 ```
-ORIENT → DECOMPOSE → DISPATCH → MONITOR → REACT → INTEGRATE → COMPLETE
+ORIENT → DECOMPOSE → (plan-review gate) → WAITING → DISPATCH → MONITOR → REACT → INTEGRATE → COMPLETE
 ```
 
-| Phase     | What happens                                             | Instructions                                                                                     |
-| --------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Orient    | Read epic, verify child statuses, decide what to do next | [[instructions/supervision-loop]]                                                                |
-| Decompose | Break work into PR-sized subtasks                        | [[instructions/decomposition-and-review]]                                                        |
-| Dispatch  | Send tasks to workers (local or remote via SSH+tmux)     | [[instructions/worker-dispatch]], [[instructions/worker-dispatch#remote-dispatch-via-ssh--tmux]] |
-| Monitor   | Event-driven: background notifications + PR Monitor      | [[instructions/supervision-loop]]                                                                |
-| React     | Handle failures, conflicts, scope changes                | [[instructions/supervision-loop]]                                                                |
-| Integrate | Verify, merge, sync                                      | [[instructions/supervision-loop]]                                                                |
-| Complete  | Update epic, capture knowledge, file follow-ups          | [[instructions/knowledge-capture]]                                                               |
+| Phase     | What happens                                                          | Instructions                                                                                     | Exit condition                                                                           |
+| --------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Orient    | Read epic, verify child statuses, decide what to do next              | [[instructions/supervision-loop]]                                                                | Next phase selected                                                                      |
+| Decompose | Break work into PR-sized subtasks; run Phase 2 review                 | [[instructions/decomposition-and-review]]                                                        | Synthesis complete; plan-review gate evaluated                                           |
+| Review    | Plan-review halt — decomposition synthesized, awaiting human approval | [[instructions/decomposition-and-review#plan-review-gate-phase-25]]                              | **Parent task promoted to `queued` by human** (status transition IS the approval record) |
+| Dispatch  | Send tasks to workers (local or remote via SSH+tmux)                  | [[instructions/worker-dispatch]], [[instructions/worker-dispatch#remote-dispatch-via-ssh--tmux]] | Worker fired; task status → `in_progress`                                                |
+| Monitor   | Event-driven: background notifications + PR Monitor                   | [[instructions/supervision-loop]]                                                                | State change event observed                                                              |
+| React     | Handle failures, conflicts, scope changes                             | [[instructions/supervision-loop]]                                                                | Issue resolved or re-dispatched                                                          |
+| Integrate | Verify, merge, sync                                                   | [[instructions/supervision-loop]]                                                                | PR merged; task → done                                                                   |
+| Complete  | Update epic, capture knowledge, file follow-ups                       | [[instructions/knowledge-capture]]                                                               | Epic done; knowledge captured                                                            |
+
+**`Review` is a real halt state** when it means "decomposed, awaiting human
+promotion to `queued`" — not a transient phase. After Phase 2 synthesis, if
+the parent task's `status != "queued"` the supervisor posts a summary comment
+on the task, sets parent `status = "review"`, emits a user-facing summary,
+and **STOPS**. No subtasks are moved past `ready`. The loop resumes only
+when the human promotes the parent to `queued` — that status transition is
+the approval record (no separate marker or metadata). See
+[[instructions/decomposition-and-review#plan-review-gate-phase-25]] for the
+exact check.
 
 ## Dispatch
 
@@ -192,6 +210,26 @@ External triggers that start the supervision loop.
 - PKB MCP unreachable from sandbox containers — workers can't update task status.
 - Pre-dispatch validation is critical: with hydration gate off, the supervisor's
   pre-dispatch check is the last chance to catch tasks targeting deprecated code.
+- **Polecat stream noise ≠ failure.** Gemini workers routinely emit loud-looking
+  stderr during boot — corrupted-credentials warnings, sandbox policy TOML parse
+  errors, "Hook system message: Task bound" hook-loop spam, missing-MCP-tool
+  errors (e.g. `release_task` not wired into the worker's MCP surface). These
+  are transient/cosmetic in many cases and the worker can still complete, push,
+  and open a PR. Do NOT halt on stderr keywords — wait for a terminal signal:
+  `polecat finish`, PR URL, or process exit with non-zero status. "PR's up" /
+  "Task updated" in the stream IS the success signal.
+- **MCP / CLI / disk three-way divergence.** After a `git pull`, the local
+  filesystem has the task file, the local `pkb show` CLI usually finds it, but
+  the remote PKB MCP (tailscale host) can lag by minutes. Polecat's bootstrap
+  validation hits the MCP and will exit if the task isn't there yet, leaving
+  the task claimed but no worktree. Recovery: `polecat reset-stalled --hours 0
+  --force` then re-dispatch. Pre-flight: `pkb show <task-id>` AND a PKB MCP
+  `get_task` before dispatching a freshly-pulled task.
+- **`merge-prep-status: waiting for bazaar window and triage`** — gating
+  mechanism is not fully documented here. A PR may have all CI checks green
+  but still sit in this pending state indefinitely. Supervisor cannot clear
+  this; a human LGTM or explicit admin merge is required. **TODO**: document
+  bazaar-window rules and how supervisor should act when encountered.
 
 ## Quick Reference
 

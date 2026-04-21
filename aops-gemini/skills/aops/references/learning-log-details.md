@@ -23,7 +23,7 @@ description: Document agent behavior patterns as learn-type tasks for later synt
 **First**: Search for existing task that matches this observation:
 
 ```python
-mcp_plugin_aops-core_tasks_list_tasks(status="active")
+mcp_plugin_aops-core_tasks_list_tasks(status="queued")
 mcp_plugin_aops-core_tasks_search_tasks(query="[keywords]")
 ```
 

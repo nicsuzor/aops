@@ -6,7 +6,11 @@ description: "The Orchestrator \u2014 multi-agent review coordinator. Commission
   \ reviews, design reviews, any artifact needing multi-perspective assessment."
 model: sonnet
 color: orange
-tools: Read, Bash
+tools: Read, Bash, Agent, Skill
+skills:
+- strategic-review
+subagents:
+- '*'
 ---
 
 # James — The Orchestrator

@@ -8,14 +8,13 @@ model: gemini-3-flash-preview
 tools:
 - read_file
 - run_shell_command
+- activate_skill
 - mcp_playwright_browser_navigate
-- mcp_playwright_browser_snapshot
-- mcp_playwright_browser_take_screenshot
-- mcp_playwright_browser_click
-- mcp_playwright_browser_wait_for
-- mcp_playwright_browser_evaluate
-- mcp_playwright_browser_type
-- mcp_playwright_browser_resize
+mcpServers:
+- playwright
+skills:
+- qa
+subagents: []
 kind: local
 max_turns: 15
 timeout_mins: 5

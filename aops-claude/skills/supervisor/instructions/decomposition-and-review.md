@@ -39,7 +39,7 @@ The supervisor decomposes large tasks into PR-sized subtasks.
    c. For each **writing** subtask: "What analysis/data needs to be final before this can be written?" — if it depends on analysis results, add the analysis task to `depends_on`
    d. If the parent task produces **academic output** (paper, report, benchmark, analysis): ensure methodology tasks exist (methodological justification, validation approach, claim-evidence audit, limitations completeness)
 9. Append decomposition summary to task body. **Remove any `- [ ]` checklists** from the body that are now tracked as subtasks — the subtask graph is the single source of truth. Keeping both causes divergence over time.
-10. Set task status to 'consensus'
+10. Annotate the task body with supervisor phase `consensus` (status remains `in_progress` throughout decomposition and review)
 ```
 
 **Hierarchy Quality Gate** (check BEFORE creating subtasks):
@@ -239,14 +239,73 @@ Parse responses into structured verdicts:
 
 - [Any non-blocking improvements from reviewers]
 
-→ Proceeding to human approval gate (status='waiting')
+→ Proceeding to human approval gate (status='review')
 ```
 
 Then:
 
 ```python
-update_task(id=task_id, updates={"status": "waiting", "body": synthesis_markdown})
+update_task(id=task_id, updates={"status": "review", "body": synthesis_markdown})
 ```
+
+---
+
+## Plan-Review Gate (Phase 2.5)
+
+After synthesizing Pauli + RBG verdicts (Phase 2) and BEFORE any DISPATCH
+action, the supervisor MUST check the parent task's status. Per
+[[../../../TAXONOMY.md]] (status transitions — see `TAXONOMY.md:172`),
+agents pull only from `queued`. The transition from `review` → `queued` is
+the **human approval record** — no separate marker, no extra metadata.
+
+**Gate check** (run exactly once, immediately after Phase 2 synthesis):
+
+```python
+parent = get_task(task_id)
+
+if parent.status != "queued":
+    # Plan-review halt — human has not yet approved the decomposition.
+    comment = render_synthesis_summary(
+        subtask_count=len(subtasks),
+        files_affected=sorted_unique_files(subtasks),
+        key_risks=extracted_risks,
+        pauli_verdict=pauli.verdict,
+        rbg_verdict=rbg.verdict,
+    )
+    mcp__pkb__append(id=task_id, content=comment)
+    update_task(id=task_id, updates={"status": "review"})
+    emit_user_summary(
+        f"Plan-review gate: {task_id} is {parent.status!r}. "
+        f"Decomposition complete with {len(subtasks)} subtasks. "
+        f"Promote to 'queued' to release for dispatch."
+    )
+    # Do NOT transition any subtask out of inbox/ready.
+    # Do NOT dispatch. STOP here. Resume from ORIENT only
+    # after the human promotes parent to 'queued'.
+    return HALT
+
+# parent.status == "queued": human has approved. Proceed to DISPATCH as today.
+```
+
+**Semantics** (explicit):
+
+- If `parent.status != "queued"` (e.g. `review`, `inbox`): **HALT**.
+  - Post synthesis summary as a comment on the parent task (subtask count,
+    files affected, key risks, Pauli + RBG verdicts).
+  - Set parent `status = "review"`.
+  - Emit a user-facing summary describing what needs human review.
+  - Do NOT transition any subtask out of `inbox` / `ready`.
+  - Do NOT dispatch. STOP.
+  - Resume only after the user promotes the parent to `queued`; on the next
+    ORIENT the supervisor re-enters and falls through this gate to DISPATCH.
+- If `parent.status == "queued"`: the human has approved. Proceed to
+  DISPATCH exactly as today.
+
+**Approval record**: there is no separate approval marker or metadata — the
+status transition `review → queued` performed by the human **is** the
+approval record. Do not invent parallel approval tracking.
+
+---
 
 **On NEEDS_REVISION**:
 
@@ -268,13 +327,13 @@ update_task(id=task_id, updates={"status": "waiting", "body": synthesis_markdown
 - [ ] Address issue 2
 - [ ] Re-run review after changes
 
-→ Returning to decomposition (status='decomposing')
+→ Returning to decomposition phase (status remains `in_progress`; phase annotation: decomposing)
 ```
 
 Then:
 
 ```python
-update_task(id=task_id, updates={"status": "active", "body": synthesis_markdown})
+update_task(id=task_id, updates={"status": "in_progress", "body": synthesis_markdown})
 # Re-enter Phase 1 with reviewer feedback
 ```
 
@@ -376,7 +435,7 @@ Respond with:
 2. **Narrow scope**: Accept RBG's constraint
 3. **Request more info**: Specific question to resolve
 
-→ Awaiting human decision (status='waiting')
+→ Awaiting human decision (status='review')
 ```
 
 ---

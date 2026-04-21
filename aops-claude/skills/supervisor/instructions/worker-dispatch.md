@@ -24,18 +24,27 @@ Load worker registry before dispatch. Each worker has:
 
 Before dispatching ANY task to a worker, the supervisor must validate:
 
-1. **Target currency**: Are the files/modules the task will touch still current? Check for:
+1. **PKB consistency**: The task exists, with matching content, in all three places the worker's bootstrap will consult:
+   - Local disk (`ls $ACA_DATA/tasks/task-<id>*`)
+   - Local CLI index (`pkb show task-<id>`)
+   - Remote PKB MCP (`get_task` via MCP)
+
+   After a fresh `git pull`, the MCP can lag by minutes. If MCP returns "Task not found" while disk and CLI see it, **do not dispatch**. Polecat will claim the task, its bootstrap will fail the MCP lookup, and the worker will exit leaving the task stuck in `in_progress` with no worktree. Wait for MCP to catch up, then re-check.
+
+2. **Target currency**: Are the files/modules the task will touch still current? Check for:
    - Deprecated code (superseded by another implementation, possibly in a different repo)
    - Files that no longer exist on the default branch
    - Components that have been rewritten or moved
 
-2. **Repo correctness**: Does the task belong in this repository? Check the task body and AC for references to other repos. If the task's deliverable lives elsewhere, redirect it — don't dispatch.
+3. **Repo correctness**: Does the task belong in this repository? Check the task body and AC for references to other repos. If the task's deliverable lives elsewhere, redirect it — don't dispatch.
 
-3. **AC implementability**: Can the acceptance criteria be met with the current codebase? If AC references APIs, tools, or patterns that no longer exist, the task needs updating before dispatch.
+4. **AC implementability**: Can the acceptance criteria be met with the current codebase? If AC references APIs, tools, or patterns that no longer exist, the task needs updating before dispatch.
 
 **If validation fails**: Update the task with findings, set status to `blocked`, and skip it. Do NOT dispatch tasks that will produce wasted work.
 
-**Why this matters**: Without runtime hydration (gate is off), this pre-dispatch check is the last opportunity to catch tasks aimed at deprecated code. The 2026-03-22 dogfood run lost a full worker cycle to a task targeting superseded Python files (GH #224).
+**Recovery from a stuck claim**: If a polecat claimed a task but exited before spawning a worktree (no entry in `polecat list`, no directory under `$POLECAT_HOME/worktrees/`, but task shows `status: in_progress` with `assignee: polecat`): run `polecat reset-stalled --hours 0 --force`, then re-dispatch once pre-dispatch validation passes.
+
+**Why this matters**: Without runtime hydration (gate is off), this pre-dispatch check is the last opportunity to catch tasks aimed at deprecated code. The 2026-03-22 dogfood run lost a full worker cycle to a task targeting superseded Python files (GH #224). The 2026-04-20 dogfood run lost a claim cycle to MCP/disk divergence.
 
 ## Critic Gate for High-Blast-Radius Tasks
 
@@ -102,16 +111,16 @@ Supervisor judgment is the primary trigger. Tag matching and keyword heuristics 
 
 3. **Gate decision**:
 
-   | Pauli Verdict    | Result                                                     |
-   | ---------------- | ---------------------------------------------------------- |
-   | SAFE_TO_DISPATCH | Dispatch normally                                          |
-   | NEEDS_REFINEMENT | Return to task spec refinement, do NOT dispatch            |
-   | DO_NOT_DISPATCH  | Set task to `needs_review`, escalate to human with context |
+   | Pauli Verdict    | Result                                               |
+   | ---------------- | ---------------------------------------------------- |
+   | SAFE_TO_DISPATCH | Dispatch normally                                    |
+   | NEEDS_REFINEMENT | Return to task spec refinement, do NOT dispatch      |
+   | DO_NOT_DISPATCH  | Set task to `review`, escalate to human with context |
 
 4. **Record gate result** in the task body (the task file is the only state store — see SKILL.md design principles):
    ```
    [timestamp] CRITIC GATE: Pauli: SAFE_TO_DISPATCH → dispatching
-   [timestamp] CRITIC GATE: Pauli: DO_NOT_DISPATCH (closes only network ingress) → needs_review
+   [timestamp] CRITIC GATE: Pauli: DO_NOT_DISPATCH (closes only network ingress) → review
    ```
 
 5. **Human override** (for `DO_NOT_DISPATCH` or `NEEDS_REFINEMENT` verdicts):
@@ -119,7 +128,7 @@ Supervisor judgment is the primary trigger. Tag matching and keyword heuristics 
    The critic gate is a safety check, not a permanent block. If a human
    determines the task is safe despite the verdict, they can override:
 
-   - Set the task status back to `active` in PKB
+   - Set the task status back to `queued` in PKB
    - Append a note: `CRITIC OVERRIDE: <rationale for why this is safe>`
    - The supervisor dispatches on the next cycle without re-invoking the gate
 
@@ -156,12 +165,12 @@ dispatch. The supervisor adds this during DECOMPOSE or before DISPATCH.
 
 **Dispatch rules based on reversibility**:
 
-| Reversibility   | Dispatch allowed? | Additional requirement                            |
-| --------------- | ----------------- | ------------------------------------------------- |
-| automatic       | Yes               | Rollback steps must be executable by agent        |
-| manual-remote   | Yes               | Human must be reachable (not overnight/weekend)   |
-| manual-physical | NO — refuse       | Escalate to human with full context               |
-| irreversible    | NO — refuse       | Set `needs_review`, present alternatives to human |
+| Reversibility   | Dispatch allowed? | Additional requirement                          |
+| --------------- | ----------------- | ----------------------------------------------- |
+| automatic       | Yes               | Rollback steps must be executable by agent      |
+| manual-remote   | Yes               | Human must be reachable (not overnight/weekend) |
+| manual-physical | NO — refuse       | Escalate to human with full context             |
+| irreversible    | NO — refuse       | Set `review`, present alternatives to human     |
 
 **Refusal grounds** (from issue #454 — any one is sufficient to refuse):
 
@@ -302,9 +311,9 @@ individual-branch mode for remaining tasks. Merge those branches into the
 feature branch manually before marking the PR ready.
 
 **Deadlock prevention**: If the branch-locked worker hangs (no `release_task`,
-no PR activity), `polecat reset-stalled --hours 4` will reset it to `active`,
-implicitly releasing the branch lock. The supervisor transitions the next
-`branch_queued` item on its next ORIENT pass. If coordinated dispatch is
+no PR activity), `polecat reset-stalled --hours 4` will reset it to `queued`,
+implicitly releasing the branch lock. The supervisor dispatches the next
+waiting `queued` sibling on its next ORIENT pass. If coordinated dispatch is
 producing repeated conflicts or failures, abort coordinated mode: dispatch
 remaining tasks on individual `polecat/<task-id>` branches and merge them into
 the feature branch before marking the PR ready.
@@ -313,7 +322,7 @@ the feature branch before marking the PR ready.
 
 **Dispatch Recording** (in epic task body, BEFORE firing the worker):
 
-Update the work items table with status `dispatched`, the worker type, and
+Update the work items table with status `in_progress`, the worker type, and
 the dispatch timestamp. The supervisor checks status on next orient phase.
 
 ```markdown
@@ -347,12 +356,12 @@ body. The supervisor should not assume silence means success — always verify
 via PKB query and GitHub PR check during MONITOR phase.
 
 **Worker failures surface as missing PRs.** If a worker fails, no PR appears.
-The task stays `in_progress` until the stale-check resets it to `active` for
+The task stays `in_progress` until the stale-check resets it to `queued` for
 the next dispatch cycle.
 
 **Known issue: auto-finish override loop.** When a task was already completed
 by another worker (e.g., Jules fixed it), polecat auto-finish detects zero
-changes and resets to active, creating an infinite retry loop. Workaround:
+changes and resets to queued, creating an infinite retry loop. Workaround:
 mark the task `done` manually. See `aops-fdc9d0e2`.
 
 ---
