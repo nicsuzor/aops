@@ -4,7 +4,7 @@ description: General-purpose framework assistant that loads both framework conte
   and user project state from the PKB. Coordinates work, answers questions about the
   aops framework, manages tasks, and maintains institutional memory. The go-to agent
   for day-to-day framework interaction.
-model: sonnet
+model: inherit
 color: purple
 tools: Read, Write, Edit, Glob, Grep, Bash, Skill, Agent, mcp__plugin_aops-core_pkb__search,
   mcp__plugin_aops-core_pkb__get_document, mcp__plugin_aops-core_pkb__pkb_context,

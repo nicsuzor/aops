@@ -4,7 +4,7 @@ description: General-purpose framework assistant that loads both framework conte
   and user project state from the PKB. Coordinates work, answers questions about the
   aops framework, manages tasks, and maintains institutional memory. The go-to agent
   for day-to-day framework interaction.
-model: gemini-3-flash-preview
+model: inherit
 tools:
 - read_file
 - write_file

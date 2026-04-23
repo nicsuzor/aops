@@ -3,7 +3,7 @@ name: rbg
 description: "The Judge \u2014 framework and project principle enforcement. Applies\
   \ axioms with judgment, not mechanical matching. May fix clear, mechanical violations\
   \ directly; flags anything requiring judgment for the caller."
-model: gemini-3-flash-preview
+model: inherit
 tools:
 - read_file
 - grep_search

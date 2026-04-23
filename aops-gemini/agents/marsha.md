@@ -4,7 +4,7 @@ description: "The QA Reviewer \u2014 runtime verification and intent checking. A
   \ IT'S BROKEN until proven otherwise. Has browser + shell access to actually run\
   \ things. Use for: verifying code changes work, checking output correctness, catching\
   \ criterion substitution. Produces PASS/FAIL/REVISE verdicts."
-model: gemini-3-flash-preview
+model: inherit
 tools:
 - read_file
 - run_shell_command
