@@ -32,6 +32,7 @@ if str(AOPS_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(AOPS_CORE_DIR))
 
 try:
+    import lib.session_naming as session_naming
     from lib.gate_model import GateResult, GateVerdict
     from lib.gates.registry import GateRegistry
     from lib.hook_utils import is_subagent_session
@@ -351,7 +352,14 @@ class HookRouter:
         # 9. Precompute values
         short_hash = get_session_short_hash(session_id)
 
-        # 10. Build Context and POP processed fields from raw_input
+        # 10. Metadata (aops-d9ba7159)
+        machine = session_naming.get_machine_name()
+        repo = session_naming.get_repo_name()
+        crew = session_naming.resolve_crew_name()
+        provider = session_naming.get_provider_name()
+        task_id = os.environ.get("AOPS_TASK_ID")
+
+        # 11. Build Context and POP processed fields from raw_input
         # We pop now so the remainder in ctx.raw_input is "extra" data
         processed_fields = [
             "hook_event_name",
@@ -387,6 +395,12 @@ class HookRouter:
             slug=slug,
             is_subagent=is_subagent,
             subagent_type=subagent_type,
+            # Metadata (aops-d9ba7159)
+            machine=machine,
+            provider=provider,
+            crew=crew,
+            repo=repo,
+            task_id=task_id,
             # Precomputed values
             session_short_hash=short_hash,
             # Event Data
@@ -443,6 +457,37 @@ class HookRouter:
 
         # Context map: match user prompt against .agents/context-map.json
         self._inject_context_map_hints(ctx, merged_result)
+
+        # Orchestrator boundary: inject dispositor reminder on work-request prompts
+        self._inject_dispositor_reminder(ctx, merged_result)
+
+    def _inject_dispositor_reminder(
+        self, ctx: HookContext, merged_result: CanonicalHookOutput
+    ) -> None:
+        """Inject orchestrator-boundary reminder when the prompt looks like work.
+
+        Only fires in orchestrator sessions (not polecat workers, not subagents)
+        and only when the classifier flags the prompt as a work-request. See
+        `lib/orchestrator_boundary.py` and `specs/orchestrator-boundary.md`.
+        """
+        try:
+            from lib.orchestrator_boundary import should_inject_dispositor_reminder
+            from lib.template_registry import TemplateRegistry
+
+            prompt = ctx.raw_input.get("prompt", "")
+            if not should_inject_dispositor_reminder(prompt):
+                return
+
+            hint = TemplateRegistry.instance().render("orchestrator.dispositor_reminder", {})
+            if not hint:
+                return
+
+            if merged_result.context_injection:
+                merged_result.context_injection = f"{merged_result.context_injection}\n\n{hint}"
+            else:
+                merged_result.context_injection = hint
+        except Exception as e:
+            print(f"WARNING: dispositor_reminder injection error: {e}", file=sys.stderr)
 
     def _inject_context_map_hints(
         self, ctx: HookContext, merged_result: CanonicalHookOutput
@@ -698,10 +743,8 @@ class HookRouter:
                 TASK_BINDING_TOOLS = {
                     "mcp__pkb__update_task",
                     "mcp__pkb__complete_task",
-                    "mcp__pkb__complete_tasks",
                     "update_task",
                     "complete_task",
-                    "complete_tasks",
                 }
                 if ctx.tool_name in TASK_BINDING_TOOLS:
                     tool_input = ctx.tool_input

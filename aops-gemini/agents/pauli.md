@@ -7,19 +7,6 @@ model: inherit
 tools:
 - read_file
 - activate_skill
-disallowedTools:
-- Write
-mcpServers:
-- pkb
-skills:
-- remember
-- planner
-subagents: []
-permissionMode: bypassPermissions
-maxTurns: false
-effort: high
-background: false
-isolation: false
 kind: local
 max_turns: 15
 timeout_mins: 5

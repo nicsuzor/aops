@@ -13,7 +13,6 @@ tools:
 - grep_search
 - run_shell_command
 - activate_skill
-- Agent
 - mcp_plugin_aops-core_pkb_search
 - mcp_plugin_aops-core_pkb_get_document
 - mcp_plugin_aops-core_pkb_pkb_context
@@ -30,12 +29,6 @@ tools:
 - mcp_plugin_aops-core_pkb_retrieve_memory
 - mcp_plugin_aops-core_pkb_list_memories
 - mcp_plugin_aops-core_pkb_get_network_metrics
-mcpServers:
-- plugin_aops-core_pkb
-skills:
-- '*'
-subagents:
-- '*'
 kind: local
 max_turns: 15
 timeout_mins: 5

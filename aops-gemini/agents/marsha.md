@@ -10,11 +10,25 @@ tools:
 - run_shell_command
 - activate_skill
 - mcp_playwright_browser_navigate
-mcpServers:
-- playwright
-skills:
-- qa
-subagents: []
+- mcp_playwright_browser_navigate_back
+- mcp_playwright_browser_click
+- mcp_playwright_browser_type
+- mcp_playwright_browser_press_key
+- mcp_playwright_browser_take_screenshot
+- mcp_playwright_browser_snapshot
+- mcp_playwright_browser_evaluate
+- mcp_playwright_browser_console_messages
+- mcp_playwright_browser_network_requests
+- mcp_playwright_browser_wait_for
+- mcp_playwright_browser_hover
+- mcp_playwright_browser_drag
+- mcp_playwright_browser_select_option
+- mcp_playwright_browser_fill_form
+- mcp_playwright_browser_file_upload
+- mcp_playwright_browser_handle_dialog
+- mcp_playwright_browser_resize
+- mcp_playwright_browser_tabs
+- mcp_playwright_browser_close
 kind: local
 max_turns: 15
 timeout_mins: 5

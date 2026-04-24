@@ -1,6 +1,6 @@
 {
   "name": "aops-core",
-  "version": "0.3.20-dev.24",
+  "version": "0.3.20-dev.25",
   "description": "AcademicOps Framework Extension for Gemini CLI - skills, agents, hooks, and tools for research workflow automation",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
@@ -13,5 +13,41 @@
         "PKB_MCP_URL": "${PKB_MCP_URL}"
       }
     }
-  }
+  },
+  "tools": [
+    {
+      "name": "activate_skill",
+      "description": "Activates a specialized agent skill by name",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the skill to activate",
+            "enum": [
+              "aops",
+              "daily",
+              "dogfood",
+              "dump",
+              "end_session",
+              "handover",
+              "hydrator",
+              "planner",
+              "project",
+              "qa",
+              "remember",
+              "research",
+              "skill-creator",
+              "sleep",
+              "strategic-review",
+              "supervisor"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    }
+  ]
 }

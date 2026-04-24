@@ -33,9 +33,7 @@ Instead of a mechanical table, build a narrative timeline of the day's work usin
 uv run python3 aops-core/scripts/show_path.py --hours 24
 ```
 
-**Format in daily note** (fully replace the `## Session Timeline` section):
-
-Use the script output to create a "Today's Path" section grouped by project. Each project should show the threads of work, starting with the session goal/intent and listing key actions (Created, Finished, Claimed) in narrative format.
+**Use as an input to the editorial synthesis**, not as a section to render verbatim. The path output helps you see the threads of work per project — what was started, what was finished, what was claimed — so the Today's Log narrative can name them. There is no standalone `## Session Timeline` or `## Today's Path` section in the daily note; the synthesis absorbs these signals.
 
 ### Step 4.1.5: Load Closure History
 
@@ -86,11 +84,11 @@ Read each session JSON from `$AOPS_SESSIONS/summaries/YYYYMMDD*.json`. Extract:
 | Prompt mentions PR/deploy/CI/infra/config/tooling; or project is framework, tooling, or personal config (tagged in ACA_DATA) | **Infrastructure** |
 | Email, calendar, scheduling, admin                                                                                           | **Administrative** |
 
-Use the user's prompt `description` text as the primary signal. Project name is a fallback — check the project's tags or category in ACA_DATA rather than hardcoding names. When ambiguous, prefer research classification — the daily skill's job is to surface research work, not bury it.
+Use the user's prompt `description` text as the primary signal. Project name is a fallback — check the project's tags or category in ACA_DATA rather than hardcoding names.
 
-**Why this matters**: Session Flow and Today's Story must lead with research sessions. Infrastructure sessions with high output (many PRs, many tasks) are visually impressive but represent lower-significance work. An interactive research session with 4 prompts is the day's headline; 5 autonomous infrastructure sessions are a footnote.
+**Classification is a signal, not a structure.** Work type tags are evidence the editorial synthesis can draw on — they are not an enforced grouping. The agent chooses the shape of Today's Log (by thread, by project, by chronology, by significance of outcome — see [[instructions/work-summary]] Step 5.3). What stays off-limits: do **not** weight research over infrastructure, or vice versa, as praise or criticism. Describe what happened factually; let the reader draw conclusions.
 
-**Incremental filtering**: After listing JSONs, read the current daily note's Session Log table. Extract session IDs already present. Filter the JSON list to exclude already-processed sessions. This prevents duplicate entries on repeated syncs.
+**Incremental awareness on repeat runs**: Read the current daily note's `## Today's Log` to see what was already synthesised. On a second run, the narrative should lead with what's new since the last write — not re-summarise the whole day.
 
 ### Step 4.2.5: Query Merged PRs
 
@@ -168,21 +166,13 @@ After classifying PRs, recommend specific agent actions for each. The available 
 
 Using **Edit tool** (not Write) to preserve existing content:
 
-**Session Log**: Add/update session entries (fully replace table).
+**Today's Log**: Hand the gathered session data + accomplishments + merged PRs off to [[instructions/work-summary]] Step 5.3, which produces the editorial synthesis. Do **not** construct a Session Log table or Session Timeline table here — both have been retired. The collapsed Work Log contains Merged PRs and Completed Tasks only; session narration lives in `## Today's Log` as prose.
 
-**Session Timeline**: Build from conversation_flow timestamps (fully replace table).
-
-**Project Accomplishments**: Add `[x]` items under project headers. Preserve any user-added notes below items.
-
-**Progress metrics** per project:
-
-- **Scheduled**: Tasks with `scheduled: YYYY-MM-DD` matching today
-- **Unscheduled**: Accomplishments not matching scheduled tasks
-- Format: `Scheduled: ██████░░░░ 6/10 | Unscheduled: 3 items`
+**Completed tasks** (Work Log): Render as a checklist with task IDs. Preserve any user-added notes.
 
 ### Step 4.4.5: Generate Goals vs. Achieved Reflection
 
-If the daily note contains a goals section (e.g., "## Things I want to achieve today", "## Focus", "### My priorities"), generate a reflection comparing stated intentions against actual outcomes.
+If the daily note contains a goals section (e.g., "## Things I want to achieve today", "## Status", "### My priorities"), generate a reflection comparing stated intentions against actual outcomes.
 
 **For each stated goal/priority**:
 

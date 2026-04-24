@@ -687,6 +687,12 @@ def generate_fallback_insights(
     return {
         **metadata,
         **operational_metrics,
+        "machine": os.environ.get("AOPS_MACHINE"),
+        "hostname": session_naming.get_hostname(),
+        "provider": session_naming.get_provider_name(),
+        "crew": os.environ.get("POLECAT_CREW_NAME"),
+        "repo": metadata.get("project"),
+        "task_id": os.environ.get("AOPS_TASK_ID"),
         "summary": "Session completed",
         "outcome": "partial",
         "accomplishments": [],

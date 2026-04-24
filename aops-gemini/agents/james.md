@@ -8,12 +8,7 @@ model: inherit
 tools:
 - read_file
 - run_shell_command
-- Agent
 - activate_skill
-skills:
-- strategic-review
-subagents:
-- '*'
 kind: local
 max_turns: 15
 timeout_mins: 5

@@ -7,8 +7,6 @@ description: "The Enforcer \u2014 periodic compliance check from the enforcer ga
 model: gemini-3-flash-preview
 tools:
 - read_file
-skills: []
-subagents: []
 kind: local
 max_turns: 15
 timeout_mins: 5

@@ -10,8 +10,6 @@ tools:
 - glob
 - replace
 - write_file
-skills: []
-subagents: []
 kind: local
 max_turns: 15
 timeout_mins: 5
