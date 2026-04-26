@@ -131,6 +131,7 @@ GATE_CONFIGS = [
                 transition=GateTransition(
                     target_status=GateStatus.CLOSED,
                     system_message_key="handover.bound",
+                    custom_action="reset_handover_invoked",
                 ),
             ),
             # Write tool used -> Close
@@ -141,7 +142,9 @@ GATE_CONFIGS = [
                 ),
                 transition=GateTransition(
                     target_status=GateStatus.CLOSED,
-                    system_message_key="handover.bound",
+                    # no message to avoid spamming on every write tool use
+                    system_message_key=None,
+                    custom_action="reset_handover_invoked",
                 ),
             ),
             # Handover skill completes -> Open
@@ -159,6 +162,7 @@ GATE_CONFIGS = [
                 transition=GateTransition(
                     target_status=GateStatus.OPEN,
                     system_message_key="handover.complete",
+                    custom_action="set_handover_invoked",
                 ),
             ),
             # Gemini slash-command injection (UserPromptSubmit containing a handover template)
@@ -170,6 +174,7 @@ GATE_CONFIGS = [
                 transition=GateTransition(
                     target_status=GateStatus.OPEN,
                     system_message_key="handover.complete",
+                    custom_action="set_handover_invoked",
                 ),
             ),
             # Gemini fallback to Pauli subagent for handover
@@ -182,6 +187,7 @@ GATE_CONFIGS = [
                 transition=GateTransition(
                     target_status=GateStatus.OPEN,
                     system_message_key="handover.complete",
+                    custom_action="set_handover_invoked",
                 ),
             ),
         ],

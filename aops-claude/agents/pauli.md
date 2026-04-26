@@ -5,10 +5,15 @@ description: The Architect of Thought and Memory (Logician & Custodian). A strat
   from atomic knowledge curation to macro-level effectual strategy.
 color: blue
 model: inherit
-tools: Read, Skill
-disallowedTools:
-- Write
+tools: Read, Skill, mcp__plugin_aops-core_pkb__search, mcp__plugin_aops-core_pkb__get_document,
+  mcp__plugin_aops-core_pkb__pkb_context, mcp__plugin_aops-core_pkb__create, mcp__plugin_aops-core_pkb__append,
+  mcp__plugin_aops-core_pkb__graph_stats, mcp__plugin_aops-core_pkb__create_task,
+  mcp__plugin_aops-core_pkb__get_task, mcp__plugin_aops-core_pkb__update_task, mcp__plugin_aops-core_pkb__list_tasks,
+  mcp__plugin_aops-core_pkb__task_search, mcp__plugin_aops-core_pkb__complete_task,
+  mcp__plugin_aops-core_pkb__create_memory, mcp__plugin_aops-core_pkb__retrieve_memory,
+  mcp__plugin_aops-core_pkb__list_memories, mcp__plugin_aops-core_pkb__get_network_metrics
 mcpServers:
+- plugin_aops-core_pkb
 - pkb
 skills:
 - remember

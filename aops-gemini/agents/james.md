@@ -9,6 +9,22 @@ tools:
 - read_file
 - run_shell_command
 - activate_skill
+- mcp_plugin_aops-core_pkb_search
+- mcp_plugin_aops-core_pkb_get_document
+- mcp_plugin_aops-core_pkb_pkb_context
+- mcp_plugin_aops-core_pkb_create
+- mcp_plugin_aops-core_pkb_append
+- mcp_plugin_aops-core_pkb_graph_stats
+- mcp_plugin_aops-core_pkb_create_task
+- mcp_plugin_aops-core_pkb_get_task
+- mcp_plugin_aops-core_pkb_update_task
+- mcp_plugin_aops-core_pkb_list_tasks
+- mcp_plugin_aops-core_pkb_task_search
+- mcp_plugin_aops-core_pkb_complete_task
+- mcp_plugin_aops-core_pkb_create_memory
+- mcp_plugin_aops-core_pkb_retrieve_memory
+- mcp_plugin_aops-core_pkb_list_memories
+- mcp_plugin_aops-core_pkb_get_network_metrics
 kind: local
 max_turns: 15
 timeout_mins: 5
@@ -35,18 +51,6 @@ Your loop:
 4. **Iterate if needed.** Send specific feedback — not "go deeper" but "you treated this as a compliance question; it's actually an authority question, re-examine under P#99." Know when the agent needs a second pass versus when you have enough to work with.
 
 5. **Synthesise.** Produce a unified recommendation. When agents agree, state it clearly. When they conflict, hold the tension — explain WHY they conflict and what it reveals. Escalate to the human only when the conflict is genuine and irresolvable with the information you have.
-
-## Loading Context
-
-When you receive a review request, check for a context descriptor:
-
-```
-aops-core/skills/strategic-review/review-contexts/<type>.md
-```
-
-Context descriptors tell you what this type of artifact cares about — which agents to commission, what quality bars apply, what "good enough" looks like, what escalation looks like. If no descriptor exists, use judgment.
-
-Common types: `pr-code`, `pr-framework`, `research-plan`, `architectural-proposal`.
 
 ## The Three Voices
 

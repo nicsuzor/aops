@@ -116,13 +116,26 @@ The five primary node types in the PKB:
 
 | Type        | Description                                                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **goal**    | A multi-month/year desired outcome — the root of the hierarchy                                                                       |
+| **goal**    | A multi-month/year desired outcome — the root of the hierarchy. Also stored as `type: target` (alias, same schema).                  |
 | **project** | A discrete thing we work on — a noun with defined scope and boundaries                                                               |
 | **epic**    | A bundle of related work that together achieves an aim — a verb                                                                      |
 | **task**    | A discrete deliverable, completable in a single focused session                                                                      |
 | **learn**   | Observational tracking — a spike, discovery, or noted finding. Not directly actionable; resolves by decomposing into follow-up tasks |
 
 The `classification` field carries additional semantic subtypes (bug, feature, spike, chore, etc.) without multiplying top-level types.
+
+### `target` nodes
+
+`target` is an alias for `goal`. Both represent user-declared strategic priorities with the same schema and computed properties. The distinction is stylistic — "goal" emphasises aspiration, "target" emphasises a concrete proof of achievement. Treat them identically in tooling and documentation.
+
+**Key fields on goal/target nodes:**
+
+| Field         | Description                                                                                                                                                                                     |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consequence` | Prose description of what happens if the task or goal is not achieved. Present on tasks too — used by the daily skill to surface stakes without editorial framing.                              |
+| `goals: []`   | List of goal/target IDs that a task or project contributes to. This is how tasks and projects link to goals — not via parent hierarchy. A task can contribute to multiple goals simultaneously. |
+
+**Why `goals: []` instead of parent edges?** Goals are cross-cutting: the same task may serve multiple strategic priorities. Parent edges encode containment; `goals: []` encodes contribution. The planner enforces this distinction — goals are never used as direct parents in the task tree.
 
 ---
 
@@ -175,6 +188,13 @@ The tree hierarchy is a **spanning tree** of the underlying dependency graph. It
 **`queued` is a human gate**: The user manually promotes tasks from `ready` to `queued` to make them available for agent dispatch. This preserves human control over what agents work on next. Agents pull only from `queued`.
 
 **Propagation**: Completion of a node should trigger readiness re-evaluation of all nodes that depend on it. The system surfaces dependency chains so that cascading unblocks are visible.
+
+### Actionable vs. Ready
+
+Framework reporting distinguishes between the **broad view** of all open work and the **narrow view** of what can be started right now:
+
+- **Actionable**: Any task that is not in a terminal state (`done`, `cancelled`, `someday`). This encompasses the entire working set: `inbox`, `ready`, `queued`, `in_progress`, `merge_ready`, `review`, `blocked`, and `paused`. Most high-level dashboards (like the `/daily` note) report actionable counts.
+- **Ready**: A subset of actionable work. Strictly limited to leaf tasks that are fully decomposed and have zero unmet dependencies. Tasks in `in_progress` or `review` are actionable but are **not** ready (as they are already claimed or awaiting feedback). Execution-oriented views (like `pkb tasks ready`) focus on this narrow subset.
 
 ---
 

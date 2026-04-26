@@ -7,6 +7,22 @@ model: inherit
 tools:
 - read_file
 - activate_skill
+- mcp_plugin_aops-core_pkb_search
+- mcp_plugin_aops-core_pkb_get_document
+- mcp_plugin_aops-core_pkb_pkb_context
+- mcp_plugin_aops-core_pkb_create
+- mcp_plugin_aops-core_pkb_append
+- mcp_plugin_aops-core_pkb_graph_stats
+- mcp_plugin_aops-core_pkb_create_task
+- mcp_plugin_aops-core_pkb_get_task
+- mcp_plugin_aops-core_pkb_update_task
+- mcp_plugin_aops-core_pkb_list_tasks
+- mcp_plugin_aops-core_pkb_task_search
+- mcp_plugin_aops-core_pkb_complete_task
+- mcp_plugin_aops-core_pkb_create_memory
+- mcp_plugin_aops-core_pkb_retrieve_memory
+- mcp_plugin_aops-core_pkb_list_memories
+- mcp_plugin_aops-core_pkb_get_network_metrics
 kind: local
 max_turns: 15
 timeout_mins: 5
