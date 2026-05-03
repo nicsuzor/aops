@@ -75,11 +75,13 @@ Every node carries three core computed properties that drive both label assignme
 
 **How computed**: Normalized composite of:
 
-- `downstream_weight`: count of nodes that depend (transitively) on this one completing
+- `downstream_weight` (internal input): count of nodes that depend (transitively) on this one completing — fed into `criticality`, not surfaced as a user-facing scalar
 - `pagerank`: structural influence in the dependency graph
 - `stakeholder_exposure`: explicit priority/stakeholder signals
 
 **What it tells you**: Which nodes to work on first when time is scarce. High criticality = unblocks many downstream nodes. Low criticality = isolated or terminal work.
+
+> **Note**: For user-facing prioritisation and ranking, use `urgency` (composes severity, edge weights, slack time, and decay). `criticality` and its inputs (including `downstream_weight`) are internal graph properties — do not sort or display them as the headline ranking signal.
 
 ### depth and leaf
 
@@ -162,6 +164,24 @@ The graph is **directed but not required to be acyclic**. Cycles are a feature f
 When two tasks have high mutual information — knowing A's state tells you about B's state — they belong in the same container (epic). When tasks are independent, they can live in different containers.
 
 The tree hierarchy is a **spanning tree** of the underlying dependency graph. It captures containment but drops cross-cutting dependency edges. Tooling must surface full dependency chains ("blocked by X, which is blocked by Y"), not just immediate blockers.
+
+---
+
+## Priority Labels (P0–P4)
+
+The single canonical definition of priority. Other framework documents MUST link here rather than redefine these labels locally.
+
+| Label | Name          | Meaning                                                                                                                   |
+| ----- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| P0    | Critical      | Blocking work, deadline overdue, or active incident. Drop everything. The default for "urgent" — escalate immediately.    |
+| P1    | Active intent | Important to the user right now; should be in-flight this week. Has near-term consequence if it slips.                    |
+| P2    | Active work   | Routine in-flight work. Scheduled and in the active working window. Promoted deliberately from P3 by the user or planner. |
+| P3    | Planned       | On the roadmap; not yet active. **Default for new tasks** — promoted to P2 when the user schedules them.                  |
+| P4    | Backlog       | Logged for the record. May never be done; survives only because deletion is more expensive than retention.                |
+
+**Lower number = higher priority.** When sorting "highest priority first", sort ascending by label number (`P0` before `P1` before `P2`, etc.).
+
+**Priority is not urgency or severity.** Urgency is a time-decay function over `due` and slack (computed by the PKB and used in ranking). Severity is a property of incidents (impact when they occur). Priority is the user-facing label that says "where does this slot in my queue right now?" — composed of, but distinct from, both. Skills that infer priority from deadlines (e.g. hydrator email capture) layer their own deadline-mapping rules on top of these definitions; they do not redefine the labels.
 
 ---
 

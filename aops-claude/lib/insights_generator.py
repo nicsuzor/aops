@@ -1,7 +1,10 @@
 """Session insights generation library.
 
 Provides unified functions for generating session insights via LLM (Claude/Gemini).
-Used by both automatic generation (Stop hook) and manual generation (skill).
+Used by automatic generation (Stop hook in `aops-core/hooks/router.py`) and the
+periodic cron run from `scripts/repo-sync-cron.sh`, both of which invoke
+`aops-core/scripts/transcript.py`. There is no standalone session-insights skill;
+this library IS the implementation.
 """
 
 from __future__ import annotations
@@ -15,53 +18,12 @@ from pathlib import Path
 from typing import Any
 
 import lib.session_naming as session_naming
-from lib.paths import get_plugin_root, get_summaries_dir
+from lib.paths import get_summaries_dir
 from lib.session_reader import extract_gate_context, find_sessions
 
 
 class InsightsValidationError(Exception):
     pass
-
-
-def load_prompt_template() -> str:
-    """Load shared prompt template (sourced from the session-insights spec in brain PKB).
-
-    Returns:
-        Prompt template string with {session_id}, {date}, {project} placeholders
-
-    Raises:
-        FileNotFoundError: If template file doesn't exist
-    """
-    template_path = get_plugin_root().parent / "specs" / "session-insights-prompt.md"
-    return template_path.read_text()
-
-
-def substitute_prompt_variables(template: str, metadata: dict[str, str]) -> str:
-    """Replace {session_id}, {date}, {project} placeholders in template.
-
-    Args:
-        template: Prompt template with {var} placeholders
-        metadata: Dict with 'session_id', 'date', 'project' keys
-
-    Returns:
-        Template with placeholders replaced
-    """
-    for key, value in metadata.items():
-        template = template.replace(f"{{{key}}}", value)
-    return template
-
-
-def extract_project_name() -> str:
-    """Extract project name from current working directory.
-
-    Returns:
-        Project name (last component of cwd) or 'unknown'
-    """
-    try:
-        cwd = Path.cwd()
-        return cwd.name
-    except Exception:
-        return "unknown"
 
 
 def extract_short_hash(session_id: str) -> str:
@@ -269,6 +231,20 @@ def _validate_token_metrics(token_metrics: dict[str, Any]) -> None:
             if not isinstance(model_data, dict):
                 raise InsightsValidationError(
                     f"Field 'token_metrics.by_model.{model_name}' must be a dict"
+                )
+
+    # Validate 'by_tool' sub-object (optional but must be dict if present)
+    if "by_tool" in token_metrics:
+        by_tool = token_metrics["by_tool"]
+        if not isinstance(by_tool, dict):
+            raise InsightsValidationError(
+                f"Field 'token_metrics.by_tool' must be a dict, got {type(by_tool).__name__}"
+            )
+        # Each tool entry should be a dict with numeric values
+        for tool_name, tool_data in by_tool.items():
+            if not isinstance(tool_data, dict):
+                raise InsightsValidationError(
+                    f"Field 'token_metrics.by_tool.{tool_name}' must be a dict"
                 )
 
     # Validate 'by_agent' sub-object (optional but must be dict if present)
@@ -549,12 +525,14 @@ def get_insights_file_path(
 
     # Use session_naming to generate the base filename
     # NOTE: provider and machine are auto-detected by session_naming if not provided
+    # task_id from $AOPS_TASK_ID flows through so insights files are task-grep-friendly.
     base = session_naming.generate_base_name(
         session_id=session_id,
         timestamp=dt,
         slug=slug or "session",
         repo=project or None,  # None triggers auto-detection; empty string causes double-dash
         shortform=shortform,
+        task_id=os.environ.get("AOPS_TASK_ID"),
     )
 
     if index is not None and index > 0:

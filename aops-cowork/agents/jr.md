@@ -21,12 +21,6 @@ tools: Read, Write, Edit, Glob, Grep, Bash, Skill, Agent, mcp__plugin_aops-core_
   mcp__plugin_aops-core_pkb__pkb_trace, mcp__plugin_aops-core_pkb__retrieve_memory,
   mcp__plugin_aops-core_pkb__search, mcp__plugin_aops-core_pkb__search_by_tag, mcp__plugin_aops-core_pkb__task_search,
   mcp__plugin_aops-core_pkb__update_task
-mcpServers:
-- plugin_aops-core_pkb
-skills:
-- '*'
-subagents:
-- '*'
 ---
 
 # Jr — Framework Assistant

@@ -17,16 +17,6 @@ tools: Read, Bash, Skill, mcp__playwright__browser_navigate, mcp__playwright__br
   mcp__plugin_aops-core_pkb__task_search, mcp__plugin_aops-core_pkb__search, mcp__plugin_aops-core_pkb__create_task,
   mcp__plugin_aops-core_pkb__update_task, mcp__plugin_aops-core_pkb__append, mcp__plugin_aops-core_pkb__get_task_children,
   mcp__plugin_aops-core_pkb__pkb_orphans, mcp__plugin_aops-core_pkb__get_network_metrics
-mcpServers:
-- plugin_aops-core_pkb
-- pkb
-- playwright
-- plugin_aops-core_pkb
-- pkb
-skills:
-- qa
-subagents:
-- rbg
 ---
 
 # Marsha — The QA Reviewer
