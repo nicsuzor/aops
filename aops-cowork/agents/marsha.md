@@ -6,7 +6,7 @@ description: "The QA Reviewer \u2014 runtime verification and intent checking. A
   \ criterion substitution. Produces PASS/FAIL/REVISE verdicts."
 model: inherit
 color: pink
-tools: Read, Bash, Skill, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back,
+tools: Read, Bash, Skill, Agent, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back,
   mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_press_key,
   mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot, mcp__playwright__browser_evaluate,
   mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests,

@@ -804,23 +804,37 @@ def _infer_project(
 
         return "antigravity"  # Default for brain directories
 
-    # Handle Gemini JSON sessions
-    if session_path.suffix == ".json":
+    # Handle Gemini JSON/JSONL sessions (Gemini chat dumps may use either ext)
+    if session_path.suffix in (".json", ".jsonl"):
         project = session_path.parent.name
         if project == "chats":
             return normalize_gemini_project(session_path.parent.parent.name)
-        return "gemini"
+        # ``.json`` extension alone is a strong Gemini signal (Claude uses
+        # .jsonl for transcripts), but ``.jsonl`` is shared — fall through so
+        # Claude/Polecat detection can run.
+        if session_path.suffix == ".json":
+            return "gemini"
 
-    # Handle Polecat/Crew sessions
-    # Use path parts directly to avoid false positives from partial string matches
+    # Handle Polecat/Crew sessions.
+    # Path layout: {category}/{worker_name}/{project}/...
+    # We want the project (the segment AFTER the worker), not
+    # ``{category}-{worker}`` — the worker is already carried separately
+    # via ``crew_name`` and stuffing it into ``repo`` produces redundant
+    # filenames like ``jewelle-crewjewelle-…``. Use path parts directly
+    # to avoid false positives from partial string matches.
     parts = session_path.parts
     for category_plural in ("polecats", "crew"):
         if category_plural in parts:
             idx = parts.index(category_plural)
-            if len(parts) > idx + 1:
-                category = category_plural.rstrip("s")
-                worker_name = parts[idx + 1]
-                return f"{category}-{worker_name}"
+            if len(parts) > idx + 2:
+                project = parts[idx + 2]
+                # Skip workspace markers and reach the real project dir.
+                if project.lstrip("-_") and not project.startswith(("-workspace", "_workspace")):
+                    return project
+            # Fallback when there's no project segment: return ``{category}``
+            # (singular) so downstream still has a sensible repo name without
+            # duplicating the worker.
+            return category_plural.rstrip("s")
 
     # Handle Claude JSONL sessions
     project = session_path.parent.name
